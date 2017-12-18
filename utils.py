@@ -3,6 +3,7 @@ Some codes from https://github.com/Newmu/dcgan_code
 """
 from __future__ import division
 import math
+import os
 import json
 import random
 import pprint
@@ -18,12 +19,27 @@ get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 # new added functions for pix2pix
 
 def load_data(image_path, flip=True, is_test=False):
-    img_A, img_B = load_image(image_path)
+    img_A = imread(os.path.join(image_path,'ours_color.bmp'))
+    img_B = imread(os.path.join(image_path,'ours_depth.bmp'))
+    img_A, img_B = preprocess_A_and_B(img_A, img_B, flip=flip, is_test=True)
+
+    img_A = img_A/127.5 - 1.
+    img_B = img_B/127.5 - 1.
+    img_A = np.array(img_A).astype(np.float32)[:, :, None]
+    img_B = np.array(img_B).astype(np.float32)[:, :, None]
+    img_AB = np.concatenate((img_A, img_B), axis=2)
+    # img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim)
+    return img_AB
+
+def load_test_data(image_path, flip=True, is_test=False):
+    img_A = imread(image_path)
+    img_B = imread(image_path)
     img_A, img_B = preprocess_A_and_B(img_A, img_B, flip=flip, is_test=is_test)
 
     img_A = img_A/127.5 - 1.
     img_B = img_B/127.5 - 1.
-
+    img_A = np.array(img_A).astype(np.float32)[:, :, None]
+    img_B = np.array(img_B).astype(np.float32)[:, :, None]
     img_AB = np.concatenate((img_A, img_B), axis=2)
     # img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim)
     return img_AB
@@ -37,7 +53,7 @@ def load_image(image_path):
 
     return img_A, img_B
 
-def preprocess_A_and_B(img_A, img_B, load_size=286, fine_size=256, flip=True, is_test=False):
+def preprocess_A_and_B(img_A, img_B, load_size=128, fine_size=128, flip=True, is_test=False):
     if is_test:
         img_A = scipy.misc.imresize(img_A, [fine_size, fine_size])
         img_B = scipy.misc.imresize(img_B, [fine_size, fine_size])
